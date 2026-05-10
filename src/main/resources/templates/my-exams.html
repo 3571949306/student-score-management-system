@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的成绩 - 学生成绩管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <style>
+        .exam-group {
+            margin-bottom: 20px;
+        }
+        .exam-group-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            border: 1px solid #bfdbfe;
+            border-radius: 10px 10px 0 0;
+        }
+        .exam-group-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: #1e40af;
+        }
+        .exam-scores {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            padding: 16px;
+            background: white;
+            border: 1px solid #bfdbfe;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+        }
+        .score-card {
+            padding: 14px 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .score-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
+        }
+        .score-card .subject {
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+        .score-card .score {
+            font-size: 24px;
+            font-weight: 800;
+        }
+        .score-card .score.excellent { color: #16a34a; }
+        .score-card .score.good { color: #2563eb; }
+        .score-card .score.medium { color: #d97706; }
+        .score-card .score.pass { color: #ea580c; }
+        .score-card .score.fail { color: #ef4444; }
+        .score-card .level {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .view-class-btn {
+            padding: 6px 14px;
+            background: white;
+            border: 1.5px solid #bfdbfe;
+            border-radius: 6px;
+            color: #4f6ef7;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .view-class-btn:hover {
+            background: #4f6ef7;
+            color: white;
+            border-color: #4f6ef7;
+            text-decoration: none;
+        }
+        .total-score {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 1px solid #fbbf24;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .total-score .label {
+            font-size: 15px;
+            color: #92400e;
+            font-weight: 600;
+        }
+        .total-score .value {
+            font-size: 28px;
+            font-weight: 800;
+            color: #78350f;
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a th:href="@{/user/loginSuccess}" class="nav-brand">
+                <div class="brand-icon">S</div>
+                <span>我的成绩</span>
+            </a>
+            <div class="nav-links">
+                <a th:href="@{/user/loginSuccess}" class="nav-link">首页</a>
+                <a th:href="@{/scores}" class="nav-link">成绩管理</a>
+                <a th:href="@{/prediction}" class="nav-link">AI预测</a>
+                <a th:href="@{/scores/my-exams}" class="nav-link active">我的成绩</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-badge">
+                    <div class="user-avatar" th:text="${#strings.substring(username,0,1)}">S</div>
+                    <span th:text="${username}">student</span>
+                </div>
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="logout-btn">退出</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="total-score" th:if="${groupedScores != null and !groupedScores.isEmpty()}">
+            <div>
+                <span class="label">📊 成绩总览</span>
+                <p style="margin:4px 0 0;font-size:13px;color:#92400e;" th:text="'共 ' + ${groupedScores.size()} + ' 次考试记录'">共 2 次考试记录</p>
+            </div>
+            <div class="value" th:text="${grandAvg} + ' 平均分'">105.5 平均分</div>
+        </div>
+
+        <div class="card" th:each="entry : ${groupedScores}">
+            <div class="exam-group">
+                <div class="exam-group-header">
+                    <div>
+                        <h3 th:text="${entry.key}">高一上 - 期中考试</h3>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span style="font-size:13px;color:#64748b;" th:text="'总分: ' + ${examTotals[entry.key]}"></span>
+                        <a class="view-class-btn" th:href="@{/scores/exam-view(studentName=${username},targetExam=${entry.value[0].examName},targetSemester=${entry.value[0].semester})}">👥 查看班级排名</a>
+                    </div>
+                </div>
+                <div class="exam-scores">
+                    <div class="score-card" th:each="s : ${entry.value}">
+                        <div class="subject" th:text="${s.subject}">语文</div>
+                        <div class="score" th:classappend="${s.score >= 130 ? 'excellent' : (s.score >= 110 ? 'good' : (s.score >= 90 ? 'medium' : (s.score >= 60 ? 'pass' : 'fail')))}"
+                             th:text="${s.score}">118</div>
+                        <div class="level" th:text="${s.score >= 130 ? '优秀' : (s.score >= 110 ? '良好' : (s.score >= 90 ? '中等' : (s.score >= 60 ? '及格' : '不及格')))}">良好</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" th:if="${groupedScores == null or groupedScores.isEmpty()}">
+            <div style="padding:60px 24px;text-align:center;color:#94a3b8;">
+                <div style="font-size:48px;margin-bottom:16px;">📭</div>
+                <p style="font-size:15px;">暂无考试记录</p>
+                <p style="font-size:13px;margin-top:8px;">请联系老师录入您的成绩。</p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 - 学生成绩管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-layout">
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a th:href="@{/user/loginSuccess}" class="nav-brand">
+                <div class="brand-icon">S</div>
+                <span>成绩管理系统</span>
+            </a>
+            <div class="nav-links">
+                <a th:href="@{/user/loginSuccess}" class="nav-link active">首页</a>
+                <a th:href="@{/scores}" class="nav-link">成绩管理</a>
+                <a th:href="@{/prediction}" class="nav-link">AI预测</a>
+                <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" th:href="@{/admin/users}" class="nav-link">账号管理</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-badge">
+                    <div class="user-avatar" th:text="${#strings.substring(username,0,1)}">T</div>
+                    <span th:text="${username}">teacher</span>
+                </div>
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="logout-btn">退出</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="card result-panel">
+            <div class="welcome-text">
+                <h3>欢迎回来，<span th:text="${username}">teacher</span>！</h3>
+                <p>当前权限：<span th:text="${roles}">ROLE_TEACHER</span></p>
+            </div>
+            <div class="links">
+                <a th:href="@{/scores}" class="link-card">
+                    <div class="icon">📊</div>
+                    <span>成绩管理</span>
+                </a>
+                <a th:href="@{/prediction}" class="link-card">
+                    <div class="icon">🤖</div>
+                    <span>AI预测</span>
+                </a>
+                <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" th:href="@{/admin/users}" class="link-card">
+                    <div class="icon">👥</div>
+                    <span>账号管理</span>
+                </a>
+                <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" th:href="@{/admin/main}" class="link-card">
+                    <div class="icon">⚙️</div>
+                    <span>管理后台</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

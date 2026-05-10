@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的成绩预测 - 学生成绩管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <style>
+        .prediction-result {
+            margin: 24px;
+            padding: 24px;
+            background: white;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .result-item {
+            text-align: center;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        .result-item .label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+        .result-item .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        .result-item .value.excellent { color: #16a34a; }
+        .result-item .value.good { color: #2563eb; }
+        .result-item .value.medium { color: #d97706; }
+        .result-item .value.pass { color: #ea580c; }
+        .result-item .value.fail { color: #ef4444; }
+        .confidence-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #3b82f6, #22c55e);
+        }
+        .no-data-msg {
+            margin: 24px;
+            padding: 40px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 15px;
+        }
+        .no-data-msg .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a th:href="@{/user/loginSuccess}" class="nav-brand">
+                <div class="brand-icon">S</div>
+                <span>AI预测</span>
+            </a>
+            <div class="nav-links">
+                <a th:href="@{/user/loginSuccess}" class="nav-link">首页</a>
+                <a th:href="@{/scores}" class="nav-link">成绩管理</a>
+                <a th:href="@{/prediction}" class="nav-link active">AI预测</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-badge">
+                    <div class="user-avatar" th:text="${#strings.substring(username,0,1)}">S</div>
+                    <span th:text="${username}">student</span>
+                </div>
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="logout-btn">退出</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2>AI 成绩预测</h2>
+                    <p class="subtitle">基于您的历史成绩数据，AI 自动预测您的成绩趋势</p>
+                </div>
+            </div>
+
+            <div th:if="${noData}" class="no-data-msg">
+                <div class="icon"></div>
+                <p>暂无您的成绩数据，无法生成预测结果。</p>
+                <p style="margin-top:8px;font-size:13px;">请联系老师录入您的成绩记录。</p>
+            </div>
+
+            <div th:if="${predictionData != null}" class="prediction-result">
+                <h3 style="margin:0 0 20px;color:#1e40af;font-size:16px;">📊 预测结果</h3>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="label">预测成绩</div>
+                        <div class="value" th:classappend="${predictionData.level == '优秀' ? 'excellent' : (predictionData.level == '良好' ? 'good' : (predictionData.level == '中等' ? 'medium' : (predictionData.level == '及格' ? 'pass' : 'fail')))}">
+                            <span th:text="${predictionData['predictedScore']}">95.5</span>
+                        </div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">等级评定</div>
+                        <div class="value" th:classappend="${predictionData['level'] == '优秀' ? 'excellent' : (predictionData['level'] == '良好' ? 'good' : (predictionData['level'] == '中等' ? 'medium' : (predictionData['level'] == '及格' ? 'pass' : 'fail')))}">
+                            <span th:text="${predictionData['level']}">良好</span>
+                        </div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">置信度</div>
+                        <div class="value">
+                            <span th:text="${predictionData['confidence']}">85</span>%
+                        </div>
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" th:style="'width:' + ${predictionData['confidence']} + '%'"></div>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size:13px;color:#64748b;text-align:center;margin-top:8px;">
+                    科目：<span th:text="${predictionData['subject']}">语文</span> |
+                    考试：<span th:text="${predictionData['examName']}">期中考试</span> |
+                    学期：<span th:text="${predictionData['semester']}">高一上</span> |
+                    <span th:text="${predictionData['modelInfo']}">随机森林</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

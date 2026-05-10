@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账号管理 - 学生成绩管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-layout">
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a th:href="@{/user/loginSuccess}" class="nav-brand">
+                <div class="brand-icon">S</div>
+                <span>账号管理</span>
+            </a>
+            <div class="nav-links">
+                <a th:href="@{/user/loginSuccess}" class="nav-link">首页</a>
+                <a th:href="@{/scores}" class="nav-link">成绩管理</a>
+                <a th:href="@{/prediction}" class="nav-link">AI预测</a>
+                <a th:href="@{/admin/users}" class="nav-link active">账号管理</a>
+                <a th:href="@{/admin/main}" class="nav-link">管理后台</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-badge">
+                    <div class="user-avatar" th:text="${#strings.substring(username,0,1)}">D</div>
+                    <span th:text="${username}">admin</span>
+                </div>
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="logout-btn">退出</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2>账号和用户分组管理</h2>
+                    <p class="subtitle">创建、编辑和删除系统用户账号</p>
+                </div>
+            </div>
+
+            <form class="grid-form account-form" th:action="@{${formAction}}" th:object="${accountForm}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="hidden" th:field="*{id}">
+                <div class="form-field">
+                    <span>用户名</span>
+                    <input th:field="*{username}" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-field">
+                    <span>密码</span>
+                    <input th:field="*{password}" placeholder="请输入密码" required>
+                </div>
+                <div class="form-field">
+                    <span>用户分组</span>
+                    <select th:field="*{roleId}" required>
+                        <option th:each="role : ${roles}" th:value="${role.id}" th:text="${role.description}">学生</option>
+                    </select>
+                </div>
+                <div class="form-field check-field">
+                    <input type="checkbox" th:field="*{enabled}">
+                    <span>启用</span>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" th:text="${accountForm.id == null ? '添加账号' : '保存账号'}">添加账号</button>
+                    <a th:if="${accountForm.id != null}" th:href="@{/admin/users}" class="btn btn-secondary">取消编辑</a>
+                </div>
+            </form>
+
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>用户分组</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${users}">
+                        <td th:text="${row.user.id}">1</td>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="width:28px;height:28px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:600;" 
+                                     th:text="${#strings.substring(row.user.username,0,1)}">D</div>
+                                <span th:text="${row.user.username}">damin</span>
+                            </div>
+                        </td>
+                        <td th:text="${row.roleText}">管理员</td>
+                        <td>
+                            <span th:if="${row.user.enabled}" class="score-badge excellent">启用</span>
+                            <span th:unless="${row.user.enabled}" class="score-badge fail">停用</span>
+                        </td>
+                        <td class="row-actions">
+                            <a th:href="@{/admin/users/{id}/edit(id=${row.user.id})}" class="btn btn-sm btn-secondary">编辑</a>
+                            <form th:action="@{/admin/users/{id}/delete(id=${row.user.id})}" method="post" th:if="${row.user.username != username}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('确定要删除该账号吗？');">删除</button>
+                            </form>
+                            <span th:if="${row.user.username == username}" style="font-size:12px;color:var(--text-light);">当前账号</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

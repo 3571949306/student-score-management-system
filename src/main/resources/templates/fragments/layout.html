@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Fragment</title>
+</head>
+<body>
+
+<header th:fragment="topbar(title, links)">
+    <div>
+        <strong th:text="${title}">页面标题</strong>
+        <span th:if="${username}">当前用户：<span th:text="${username}">user</span></span>
+    </div>
+    <nav th:if="${links != null}">
+        <a th:each="link : ${links}"
+           th:href="${link.url}"
+           th:text="${link.text}">链接</a>
+    </nav>
+</header>
+
+</body>
+</html>

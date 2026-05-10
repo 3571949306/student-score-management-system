@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成绩管理 - 学生成绩管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <style>
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .modal-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+        .modal-close {
+            width: 32px; height: 32px;
+            border: none;
+            background: #f1f5f9;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .modal-close:hover {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        .modal-body { padding: 24px; }
+        .modal-body .form-field { margin-bottom: 16px; }
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: #fafbfc;
+            border-radius: 0 0 12px 12px;
+        }
+        .modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .modal-grid .wide-field {
+            grid-column: 1 / -1;
+        }
+        .flash-message {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            z-index: 999;
+            animation: slideInRight 0.3s ease;
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .class-info-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #e0f2fe, #dbeafe);
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .class-info-bar .info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .class-info-bar .info h4 {
+            margin: 0;
+            font-size: 15px;
+            color: #1e40af;
+        }
+        .class-info-bar .info p {
+            margin: 0;
+            font-size: 13px;
+            color: #475569;
+        }
+        .class-info-bar .actions {
+            display: flex;
+            gap: 8px;
+        }
+        .student-row-highlight {
+            background: linear-gradient(90deg, #fef3c7, #fde68a) !important;
+        }
+        .score-cell {
+            font-size: 18px !important;
+            font-weight: 800 !important;
+            text-align: center;
+            min-width: 70px;
+        }
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 16px !important;
+            font-weight: 800 !important;
+            min-width: 50px;
+        }
+        .class-filter {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .class-filter .filter-btn {
+            padding: 6px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            color: #64748b;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .class-filter .filter-btn.active,
+    .class-filter .filter-btn:hover {
+        background: #4f6ef7;
+        color: white;
+        border-color: #4f6ef7;
+    }
+    .sort-header {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+    }
+    .sort-header:hover {
+        color: #4f6ef7;
+    }
+    .sort-arrow {
+        font-size: 10px;
+        margin-left: 2px;
+        opacity: 0.3;
+    }
+    .sort-header.active .sort-arrow {
+        opacity: 1;
+        color: #4f6ef7;
+    }
+    .rank-cell {
+        text-align: center;
+        font-weight: 700;
+        color: #64748b;
+        font-size: 14px;
+    }
+    .rank-1 {
+        color: #f59e0b;
+        font-size: 18px;
+    }
+    .rank-2 {
+        color: #94a3b8;
+        font-size: 16px;
+    }
+    .rank-3 {
+        color: #d97706;
+        font-size: 16px;
+    }
+    .exam-filter {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .exam-filter select {
+            padding: 6px 12px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #1e293b;
+            background: white;
+        }
+        .password-modal .modal-content {
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a th:href="@{/user/loginSuccess}" class="nav-brand">
+                <div class="brand-icon">S</div>
+                <span>成绩管理</span>
+            </a>
+            <div class="nav-links">
+                <a th:href="@{/user/loginSuccess}" class="nav-link">首页</a>
+                <a th:href="@{/scores}" class="nav-link active">成绩管理</a>
+                <a th:href="@{/prediction}" class="nav-link">AI预测</a>
+                <a th:unless="${canEdit}" th:href="@{/scores/my-exams}" class="nav-link">我的成绩</a>
+                <a th:if="${#authorization.expression('hasRole(''ADMIN'')')}" th:href="@{/admin/users}" class="nav-link">账号管理</a>
+            </div>
+            <div class="nav-user">
+                <div class="user-badge">
+                    <div class="user-avatar" th:text="${#strings.substring(username,0,1)}">T</div>
+                    <span th:text="${username}">teacher</span>
+                </div>
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <button type="submit" class="logout-btn">退出</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2>学生成绩管理</h2>
+                    <p class="subtitle" th:if="${canEdit}">查看和管理所有学生的成绩记录</p>
+                    <p class="subtitle" th:unless="${canEdit}">查看班级成绩记录</p>
+                </div>
+                <div th:if="${canEdit}">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openAddModal()">+ 添加成绩</button>
+                </div>
+            </div>
+
+            <div th:if="${message}" class="alert alert-success flash-message" th:text="${message}"></div>
+
+            <!-- Class & Exam Info Bar -->
+            <div class="class-info-bar">
+                <div class="info">
+                    <span style="font-size:20px;">🏫</span>
+                    <div>
+                        <h4 th:if="${className != null}" th:text="${className}">高一(1)班</h4>
+                        <h4 th:if="${className == null}" th:text="${myClass != null and myClass != ''} ? ${myClass} : '全部班级'">高一(1)班</h4>
+                        <p th:text="'考试：' + ${examName != null ? examName : (currentExam != null ? currentExam : '期中考试')} + ' | ' + ${semester != null ? semester : (currentSemester != null ? currentSemester : '高一上')}">考试：期中考试 | 高一上</p>
+                    </div>
+                </div>
+                <div class="actions">
+                    <!-- Teacher class filter -->
+                    <div th:if="${canEdit}" class="class-filter">
+                        <a th:href="@{/scores(className='高一(1)班',examName=${currentExam},semester=${currentSemester})}" class="filter-btn" th:classappend="${className == null or className == '高一(1)班' ? 'active' : ''}">一班</a>
+                        <a th:href="@{/scores(className='高一(2)班',examName=${currentExam},semester=${currentSemester})}" class="filter-btn" th:classappend="${className == '高一(2)班' ? 'active' : ''}">二班</a>
+                    </div>
+                    <!-- Exam filter -->
+                    <div class="exam-filter" th:data-class="${className != null ? className : myClass}">
+                        <select id="examSelect" onchange="updateExamFilter()">
+                            <option value="期中考试" th:selected="${(examName != null ? examName : currentExam) == '期中考试'}">期中考试</option>
+                            <option value="期末考试" th:selected="${(examName != null ? examName : currentExam) == '期末考试'}">期末考试</option>
+                        </select>
+                        <select id="semesterSelect" onchange="updateExamFilter()">
+                            <option value="高一上" th:selected="${(semester != null ? semester : currentSemester) == '高一上'}">高一上</option>
+                            <option value="高一下" th:selected="${(semester != null ? semester : currentSemester) == '高一下'}">高一下</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div th:unless="${canEdit}" class="read-only-message">
+                您正在查看 <span th:text="${className != null ? className : myClass}">高一(1)班</span> 的成绩。
+                <a th:href="@{/scores/my-exams}" class="btn btn-sm btn-primary" style="margin-left:12px;">📋 我的全部成绩</a>
+            </div>
+
+            <div class="table-container">
+                <table class="data-table"
+                       th:data-class="${className != null ? className : myClass}"
+                       th:data-exam="${currentExam}"
+                       th:data-semester="${currentSemester}"
+                       th:data-sortby="${sortBy}"
+                       th:data-sortdir="${sortDir}">
+                    <thead>
+                    <tr>
+                        <th style="min-width:50px;">排名</th>
+                        <th class="sort-header" th:classappend="${sortBy == 'studentNumber' ? 'active' : ''}" data-sort="studentNumber" style="min-width:80px;">
+                            学号 <span class="sort-arrow" th:if="${sortBy == 'studentNumber'}" th:text="${sortDir == 'desc' ? '▼' : '▲'}"></span>
+                        </th>
+                        <th class="sort-header" th:classappend="${sortBy == 'studentName' ? 'active' : ''}" data-sort="studentName" style="min-width:60px;">
+                            姓名 <span class="sort-arrow" th:if="${sortBy == 'studentName'}" th:text="${sortDir == 'desc' ? '▼' : '▲'}"></span>
+                        </th>
+                        <th th:each="subject : ${subjects}" class="sort-header" th:classappend="${sortBy == subject ? 'active' : ''}" th:data-sort="${subject}" style="min-width:60px;text-align:center;">
+                            <span th:text="${subject}">语文</span> <span class="sort-arrow" th:if="${sortBy == subject}" th:text="${sortDir == 'desc' ? '▼' : '▲'}"></span>
+                        </th>
+                        <th class="sort-header active" data-sort="total" style="min-width:60px;text-align:center;">
+                            总分 <span class="sort-arrow" th:if="${sortBy == 'total'}" th:text="${sortDir == 'desc' ? '▼' : '▲'}"></span>
+                        </th>
+                        <th th:if="${canEdit}" style="min-width:80px;">操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${scores}"
+                        th:classappend="${highlightName != null and row.studentName == highlightName ? 'student-row-highlight' : ''}">
+                        <td class="rank-cell" th:classappend="${row.rank == 1 ? 'rank-1' : (row.rank == 2 ? 'rank-2' : (row.rank == 3 ? 'rank-3' : ''))}" th:text="${row.rank}">1</td>
+                        <td th:text="${row.studentNumber}">20260101</td>
+                        <td th:text="${row.studentName}" style="font-weight:600;">李明</td>
+                        <td th:each="subject : ${subjects}" style="text-align:center;">
+                            <span th:if="${row.getScore(subject) != null}"
+                                  class="score-badge"
+                                  th:classappend="${row.getScore(subject) >= 130 ? 'excellent' : (row.getScore(subject) >= 110 ? 'good' : (row.getScore(subject) >= 90 ? 'medium' : (row.getScore(subject) >= 60 ? 'pass' : 'fail')))}"
+                                  th:text="${row.getScore(subject)}">115</span>
+                            <span th:unless="${row.getScore(subject) != null}" style="color:#cbd5e1;">-</span>
+                        </td>
+                        <td style="text-align:center;font-weight:800;font-size:16px;" th:text="${row.total}">510</td>
+                        <td th:if="${canEdit}" class="row-actions">
+                            <button type="button" class="btn btn-sm btn-primary" th:onclick="'openPasswordModal(\'' + ${row.studentName} + '\')'" title="修改该学生登录密码">🔑</button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(scores)}">
+                        <td th:colspan="${canEdit ? (8 + subjects.size()) : (4 + subjects.size())}" style="text-align:center;color:#94a3b8;padding:40px;">暂无成绩记录</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">添加成绩</h3>
+            <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="scoreForm">
+                <input type="hidden" id="formId" value="">
+                <div class="modal-grid">
+                    <div class="form-field">
+                        <span>姓名</span>
+                        <input id="studentName" placeholder="请输入姓名">
+                    </div>
+                    <div class="form-field">
+                        <span>学号</span>
+                        <input id="studentNumber" placeholder="请输入学号">
+                    </div>
+                    <div class="form-field">
+                        <span>班级</span>
+                        <select id="className">
+                            <option value="高一(1)班">高一(1)班</option>
+                            <option value="高一(2)班">高一(2)班</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <span>科目</span>
+                        <select id="subject">
+                            <option th:each="s : ${subjects}" th:value="${s}" th:text="${s}">语文</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <span>成绩</span>
+                        <input type="number" id="scoreVal" min="0" max="150" step="0.01" placeholder="0-150">
+                    </div>
+                    <div class="form-field">
+                        <span>考试</span>
+                        <select id="examName">
+                            <option value="期中考试">期中考试</option>
+                            <option value="期末考试">期末考试</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <span>学期</span>
+                        <select id="semester">
+                            <option value="高一上">高一上</option>
+                            <option value="高一下">高一下</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <span>日期</span>
+                        <input type="date" id="examDate">
+                    </div>
+                    <div class="form-field wide-field">
+                        <span>备注</span>
+                        <input id="remark" placeholder="可选备注信息">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">取消</button>
+            <button type="button" class="btn btn-primary" onclick="submitForm()" id="submitBtn">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Password Modal -->
+<div class="modal-overlay password-modal" id="passwordModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>修改密码</h3>
+            <button class="modal-close" onclick="closeModal('passwordModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom:16px;color:#475569;font-size:14px;">
+                为 <strong id="pwdStudentName"></strong> 设置新的登录密码
+            </p>
+            <div class="form-field">
+                <span>新密码</span>
+                <input type="text" id="newPassword" placeholder="请输入新密码" value="123">
+            </div>
+            <input type="hidden" id="pwdStudentNameValue" value="">
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('passwordModal')">取消</button>
+            <button type="button" class="btn btn-primary" onclick="submitPassword()">确认修改</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function getCsrfToken() {
+        var inputs = document.querySelectorAll('input[name="_csrf"]');
+        return inputs.length > 0 ? {name: inputs[0].name, value: inputs[0].value} : null;
+    }
+
+    function openAddModal() {
+        document.getElementById('modalTitle').textContent = '添加成绩';
+        document.getElementById('submitBtn').textContent = '添加';
+        document.getElementById('formId').value = '';
+        document.getElementById('scoreForm').reset();
+        document.getElementById('editModal').classList.add('active');
+    }
+
+    function openEditModal(id) {
+        document.getElementById('modalTitle').textContent = '编辑成绩';
+        document.getElementById('submitBtn').textContent = '保存';
+        document.getElementById('formId').value = id;
+        document.getElementById('scoreForm').reset();
+
+        fetch('/scores/' + id + '/data')
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                document.getElementById('studentName').value = data.studentName || '';
+                document.getElementById('studentNumber').value = data.studentNumber || '';
+                document.getElementById('className').value = data.className || '高一(1)班';
+                document.getElementById('subject').value = data.subject || '';
+                document.getElementById('scoreVal').value = data.score || '';
+                document.getElementById('examName').value = data.examName || '期中考试';
+                document.getElementById('semester').value = data.semester || '高一上';
+                document.getElementById('examDate').value = data.examDate || '';
+                document.getElementById('remark').value = data.remark || '';
+                document.getElementById('editModal').classList.add('active');
+            })
+            .catch(function(err) {
+                alert('获取数据失败：' + err.message);
+            });
+    }
+
+    function openPasswordModal(studentName) {
+        document.getElementById('pwdStudentName').textContent = studentName;
+        document.getElementById('pwdStudentNameValue').value = studentName;
+        document.getElementById('newPassword').value = '123';
+        document.getElementById('passwordModal').classList.add('active');
+    }
+
+    function submitPassword() {
+        var studentName = document.getElementById('pwdStudentNameValue').value;
+        var newPassword = document.getElementById('newPassword').value;
+        if (!newPassword || newPassword.length < 3) {
+            alert('密码至少需要3个字符');
+            return;
+        }
+        var formData = new FormData();
+        formData.append('studentName', studentName);
+        formData.append('newPassword', newPassword);
+        var csrf = getCsrfToken();
+        if (csrf) {
+            formData.append(csrf.name, csrf.value);
+        }
+        fetch('/scores/change-password', {
+            method: 'POST',
+            body: formData
+        }).then(function(res) { return res.text(); })
+        .then(function(text) {
+            if (text === 'success') {
+                alert('密码修改成功！新密码为: ' + newPassword);
+                closeModal('passwordModal');
+            } else {
+                alert(text.replace('error:', ''));
+            }
+        }).catch(function(err) {
+            alert('请求失败：' + err.message);
+        });
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(function(modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.active').forEach(function(m) {
+                m.classList.remove('active');
+            });
+        }
+    });
+
+    function submitForm() {
+        var id = document.getElementById('formId').value;
+        var formData = new FormData();
+        formData.append('studentName', document.getElementById('studentName').value);
+        formData.append('studentNumber', document.getElementById('studentNumber').value);
+        formData.append('className', document.getElementById('className').value);
+        formData.append('subject', document.getElementById('subject').value);
+        formData.append('score', document.getElementById('scoreVal').value);
+        formData.append('examName', document.getElementById('examName').value);
+        formData.append('semester', document.getElementById('semester').value);
+        formData.append('examDate', document.getElementById('examDate').value);
+        formData.append('remark', document.getElementById('remark').value);
+
+        var csrf = getCsrfToken();
+        if (csrf) {
+            formData.append(csrf.name, csrf.value);
+        }
+
+        var url = id ? '/scores/' + id : '/scores';
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        }).then(function(res) {
+            return res.text();
+        }).then(function(text) {
+            if (text === 'success') {
+                window.location.reload();
+            } else if (text.startsWith('error:')) {
+                alert(text.replace('error:', ''));
+            } else {
+                alert('操作失败');
+            }
+        }).catch(function(err) {
+            alert('请求失败：' + err.message);
+        });
+    }
+
+    // Auto-scroll to highlighted row for students
+    window.addEventListener('DOMContentLoaded', function() {
+        var highlighted = document.querySelector('.student-row-highlight');
+        if (highlighted) {
+            highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Exam filter dropdown handler
+        var filterContainer = document.querySelector('.exam-filter');
+        if (filterContainer) {
+            var className = filterContainer.getAttribute('data-class') || '';
+            var examSelect = document.getElementById('examSelect');
+            var semesterSelect = document.getElementById('semesterSelect');
+            if (examSelect) {
+                examSelect.addEventListener('change', function() {
+                    window.location.href = '/scores?className=' + encodeURIComponent(className) + '&examName=' + this.value + '&semester=' + semesterSelect.value;
+                });
+            }
+            if (semesterSelect) {
+                semesterSelect.addEventListener('change', function() {
+                    window.location.href = '/scores?className=' + encodeURIComponent(className) + '&examName=' + examSelect.value + '&semester=' + this.value;
+                });
+            }
+        }
+
+        // Sort header click handler
+        var table = document.querySelector('.data-table');
+        if (table) {
+            var cls = table.getAttribute('data-class') || '';
+            var exam = table.getAttribute('data-exam') || '';
+            var sem = table.getAttribute('data-semester') || '';
+            var curSortBy = table.getAttribute('data-sortby') || 'total';
+            var curSortDir = table.getAttribute('data-sortdir') || 'desc';
+
+            var headers = table.querySelectorAll('.sort-header');
+            headers.forEach(function(th) {
+                var sortBy = th.getAttribute('data-sort');
+                if (!sortBy) return;
+                th.addEventListener('click', function() {
+                    var newDir = (sortBy === curSortBy && curSortDir === 'desc') ? 'asc' : 'desc';
+                    window.location.href = '/scores?className=' + encodeURIComponent(cls) + '&examName=' + exam + '&semester=' + sem + '&sortBy=' + sortBy + '&sortDir=' + newDir;
+                });
+            });
+        }
+    });
+</script>
+</body>
+</html>

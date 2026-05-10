@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统错误 - 学生成绩管理系统</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="app-layout">
+    <nav class="top-nav">
+        <div class="nav-container">
+            <a th:href="@{/user/loginSuccess}" class="nav-brand">
+                <div class="brand-icon">S</div>
+                <span>成绩管理系统</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="page-content">
+        <div class="card result-panel">
+            <div class="welcome-text">
+                <h3>⚠️ 系统错误</h3>
+            </div>
+            <div class="alert alert-error" style="max-width:500px;margin:0 auto 24px;" th:text="${errorMessage}">错误信息</div>
+            <div class="links" style="max-width:400px;">
+                <a th:href="@{/user/loginSuccess}" class="link-card">
+                    <div class="icon">🏠</div>
+                    <span>返回首页</span>
+                </a>
+                <a th:href="@{/logout}" class="link-card">
+                    <div class="icon">🚪</div>
+                    <span>安全退出</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
