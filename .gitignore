@@ -11,3 +11,6 @@ logs/
 Thumbs.db
 
 data/
+
+# Local research paper output (kept local only)
+/论文输出/
