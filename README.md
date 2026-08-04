@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Spring Security 学生成绩管理示例
 
 这是一个 Spring Boot + Spring Security + Thymeleaf 示例项目，包含学生成绩管理、AI 成绩预测、账号管理和基于角色的访问控制。
@@ -260,6 +259,3 @@ MySQL 5.1.49 驱动已包含在项目依赖中（runtime scope）。
 - 学生行参与排序，同时保持高亮和自动滚动到视野
 - 修正登录页演示账号信息
 - 更新 init.sql 脚本，完整初始化 15 个学生和 150 条成绩数据
-=======
-# -
->>>>>>> 8c5c16ea4c6911c1e23f389fcbb020d8465fcace
