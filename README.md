@@ -22,7 +22,7 @@
 
 ```bash
 # Windows PowerShell
-$env:JAVA_HOME = "C:\Users\tcw\.jdks\ms-17.0.19"
+$env:JAVA_HOME = "<你的JDK17安装路径>"
 & "$env:JAVA_HOME\bin\java.exe" -jar target/spring-security-demo-1.0.0.jar
 ```
 
@@ -49,7 +49,7 @@ spring.profiles.active=mysql
 4. 启动应用。
 
 ```bash
-$env:JAVA_HOME = "C:\Users\tcw\.jdks\ms-17.0.19"
+$env:JAVA_HOME = "<你的JDK17安装路径>"
 & "$env:JAVA_HOME\bin\java.exe" -jar target/spring-security-demo-1.0.0.jar
 ```
 
